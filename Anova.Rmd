@@ -1,0 +1,293 @@
+---
+title: "GLM pour données de pêche : "
+author: "Julien Patras"
+date: "2024"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+**Packages nécessaires**
+```{r packages,message=FALSE}
+rm(list=ls())
+library(knitr) # pour avoir un format table dans les sorties
+library(ggplot2) # pour avoir de 'bdf' graphiques
+library(plyr) # pour produire des résumés
+library(cowplot)
+library(gridExtra)
+library(corrplot) # representation graph des correlations
+library(FactoMineR) # pour realiser l'acp
+library(factoextra) # graphique ggplot pour acp
+library(Metrics)
+
+```
+
+
+
+## Données
+
+
+
+```{r}
+# df=read.csv("Data_R_total.csv")
+df=read.table("Data_R_total.csv",header=TRUE,sep=",")
+head(df)
+# summary(df)
+summary(df$Parrotfish)
+
+```
+
+```{r}
+#'trk_id', 'Inf_ID', 'dayNightRatio', 'dayMinutes', 'nightMinutes','moonDay', 'moonDur', 'moonPhase', 'Gear', 'nb_captures', 'nb_especes', 'passToPass', 'village', 'Coast', 'habitat'
+
+df <- df[, 1:15, drop = FALSE]
+head(df)
+
+qualitative_cols <- c('Inf_ID', 'moonPhase', 'Gear', 'passToPass', 'village', 'Coast', 'habitat')
+df[qualitative_cols] <- lapply(df[qualitative_cols], as.factor)
+
+
+# Change the reference category
+# df$habitat <- relevel(df$habitat, ref = "ForeReef")
+# df$Inf_ID <- relevel(df$Inf_ID, ref = "AM039")
+# df$Gear <- relevel(df$Gear, ref = "spear_day")
+
+#make this example reproducible
+set.seed(1)
+
+#use 70% of dataset as training set and 30% as test set
+sample <- sample(c(TRUE, FALSE), nrow(df), replace=TRUE, prob=c(0.7,0.3))
+train  <- df[sample, ]
+test   <- df[!sample, ]
+
+
+```
+```{r}
+sum(df$nb_captures)
+```
+
+
+```{r}
+# Models to train:
+
+#Inf_ID+dayNightRatio+dayMinutes+nightMinutes+moonDay+moonDur+moonPhase+Gear+nb_captures+nb_especes+passToPass+village+Coast+habitat
+
+
+Diversity.gaussian <- glm(nb_captures~Inf_ID+dayNightRatio+dayMinutes+nightMinutes+moonDay+
+                                      moonDur+moonPhase+Gear+passToPass+village+Coast+habitat,
+                                      family="gaussian", data=train)
+
+# Diversity.binomial <- glm(nb_captures~Gear+habitat+village,family="binomial", data=train)
+Diversity.Gamma <- glm(nb_captures~Inf_ID+dayNightRatio+dayMinutes+nightMinutes+moonDay+moonDur+moonPhase+Gear+passToPass+village+Coast+habitat,family="Gamma", data=train)
+# Diversity.inverse.gaussian <- glm(nb_captures~Gear+habitat+village,family="inverse.gaussian", data=train)
+Diversity.poisson <- glm(nb_captures~Inf_ID+dayNightRatio+dayMinutes+nightMinutes+moonDay+moonDur+moonPhase+Gear+passToPass+village+Coast+habitat,family="poisson", data=train)
+# Diversity.quasi <- glm(nb_captures~Gear+habitat+village,family="quasi", data=train)
+
+
+print(anova(Diversity.gaussian, Diversity.Gamma, Diversity.poisson))
+AIC(Diversity.gaussian, Diversity.Gamma, Diversity.poisson)
+
+
+print('MAE for gaussian linear model on the train set: ')
+mae(train$nb_captures, predict(Diversity.gaussian))
+mae(train$nb_captures, predict(Diversity.Gamma))
+mae(train$nb_captures, predict(Diversity.poisson))
+# mae(train$nb_captures, predict(Diversity.poisson))
+# mae(train$nb_captures, predict(Diversity.quasi))
+
+
+test_features <- subset(test, select = -c(nb_captures))
+print('MAE for gaussian linear model on the test set: ')
+suppressWarnings(mae(test$nb_captures, predict(Diversity.gaussian, test_features, type="response")))
+suppressWarnings(mae(test$nb_captures, predict(Diversity.Gamma, test_features, type="response")))
+suppressWarnings(mae(test$nb_captures, predict(Diversity.poisson, test_features, type="response")))
+
+
+print(summary(Diversity.gaussian))
+```
+
+```{r}
+# With other variables:
+
+Diversity.gaussian <- glm(nb_captures ~ Inf_ID + dayNightRatio + Gear*habitat + moonDay,
+                                        family="gaussian", data=train)
+
+
+# Diversity.binomial <- glm(nb_captures~Gear+habitat+village,family="binomial", data=df)
+Diversity.Gamma <- glm(nb_captures~Inf_ID+nightMinutes+Gear*habitat+moonDay,family="Gamma", data=train)
+# Diversity.inverse.gaussian <- glm(nb_captures~Gear*habitat*village*moonDur,family="inverse.gaussian", data=df)
+Diversity.poisson <- glm(nb_captures~Inf_ID+nightMinutes+Gear*habitat+moonDay,family="poisson", data=train)
+# Diversity.quasi <- glm(nb_captures~Gear*habitat*village*moonDur,family="quasi", data=train)
+
+print(anova(Diversity.gaussian, Diversity.Gamma, Diversity.poisson))
+AIC(Diversity.gaussian, Diversity.Gamma, Diversity.poisson)
+
+print('MAE for gaussian linear model on the train set: ')
+mae(train$nb_captures, predict(Diversity.gaussian))
+mae(train$nb_captures, predict(Diversity.Gamma))
+mae(train$nb_captures, predict(Diversity.poisson))
+# mae(train$nb_captures, predict(Diversity.poisson))
+# mae(train$nb_captures, predict(Diversity.quasi))
+
+
+test_features <- subset(test, select = -c(nb_captures))
+print('MAE for gaussian linear model on the test set: ')
+suppressWarnings(mae(test$nb_captures, predict(Diversity.gaussian, test_features, type="response")))
+suppressWarnings(mae(test$nb_captures, predict(Diversity.Gamma, test_features, type="response")))
+suppressWarnings(mae(test$nb_captures, predict(Diversity.poisson, test_features, type="response")))
+
+
+print(summary(Diversity.gaussian))
+```
+
+
+
+```{r}
+# anova(Diversity.lm)
+```
+
+```{r}
+# plot(Diversity.lm, which = 1)
+# plot(Diversity.lm, which = 2)
+# plot(Diversity.lm, which = 3)
+# plot(Diversity.lm, which = 4)
+
+```
+
+
+
+```{r}
+# modA2I<-lm(nb_especes ~ Gear * habitat * dayNightRatio * nightMinutes * dayMinutes * nightMinutes, data=train)
+
+# summary(modA2I)
+```
+
+
+```{r}
+# anova(modA2I)
+
+```
+
+
+
+
+
+
+
+```{r}
+# Gear*habitat+village*moonDur
+# Inf_ID+dayNightRatio+dayMinutes+nightMinutes+moonDay+moonDur+moonPhase+Gear+passToPass+village+Coast+habitat
+
+Diversity.gaussian <- glm(nb_captures~Inf_ID+nightMinutes+Gear*habitat+moonDay,family="gaussian", data=train)
+Diversity.poisson <- glm(nb_captures~Inf_ID+nightMinutes+Gear*habitat+moonDay,family="poisson", data=train)
+Diversity.quasi <- glm(nb_captures~Inf_ID+nightMinutes+Gear*habitat+moonDay,family="quasi", data=train)
+
+# Diversity.binomial <- glm(nb_captures~Gear+habitat+village,family="binomial", data=df)
+# Diversity.Gamma <- glm(nb_captures~Gear*habitat*village*moonDur,family="Gamma", data=df)
+# Diversity.inverse.gaussian <- glm(nb_captures~Gear*habitat*village*moonDur,family="inverse.gaussian", data=df)
+
+print('MAE for gaussian linear model on the train set: ')
+mae(train$nb_captures, predict(Diversity.gaussian))
+# mae(train$nb_captures, predict(Diversity.poisson))
+# mae(train$nb_captures, predict(Diversity.quasi))
+
+
+test_features <- subset(test, select = -c(nb_captures))
+print('MAE for gaussian linear model on the test set: ')
+
+suppressWarnings(mae(test$nb_captures, predict(Diversity.gaussian, test_features, type="response")))
+# mae(test$nb_captures, predict(Diversity.poisson, test_features, type="response"))
+# mae(test$nb_captures, predict(Diversity.quasi, test_features, type="response"))
+
+print(summary(Diversity.gaussian))
+
+# var_imp = h2o.varimp(Diversity.gaussian)
+
+# predict(mod.gaussian, test_features, type="response")
+
+```
+
+
+
+```{r}
+mean(df$nb_captures)
+
+set.seed(1234) # permet de simuler toujours les mêmes comptages.
+theoretic_count <-rpois(248,51.2818)
+
+# on incorpore ces comptages théoriques dans un data frame
+tc_df <-data.frame(theoretic_count)
+
+# on plot simultanémaent les comptages observés et les comptages théoriques
+ggplot(df,aes(nb_captures))+
+   geom_bar(fill="#1E90FF")+
+   geom_bar(data=tc_df, aes(theoretic_count,fill="#1E90FF", alpha=0.5))+
+   theme_classic()+
+   theme(legend.position="none") 
+```
+```{r}
+mod.quasipois1 <- glm(nb_captures~nb_especes,family="quasipoisson", data=df) 
+summary(mod.quasipois1)
+
+```
+
+```{r}
+library(MASS)
+    
+```
+```{r}
+mod.nb1 <- glm.nb(nb_captures~nb_especes, data=df) 
+summary(mod.nb1)
+    
+```
+
+
+
+Descriptive visualizations:
+
+```{r}
+ggplot(df, aes(x=nb_especes, y=nb_captures))+geom_point()
+```
+
+```{r}
+# ggpairs(df[, 13:15, drop = FALSE],cardinality_threshold=803)
+
+```
+
+
+
+```{r}
+var = df$moonDur
+var_str = "moonDur"
+
+# print(ggplot(df,aes(x=var,y=nb_captures))+geom_boxplot()+ggtitle(paste("Impact du ",var_str," sur le nb_especes")))
+# print(ggplot(df,aes(x=var,y=nb_especes))+geom_boxplot()+ggtitle(paste("Impact du ",var_str," sur le nb_especes")))
+
+
+print(ggplot(df,aes(x=cut(var, breaks = 10),y=nb_captures))+geom_boxplot()+ggtitle(paste("Impact du ",var_str," sur le nb_especes")))
+print(ggplot(df,aes(x=cut(var, breaks = 10),y=nb_especes))+geom_boxplot()+ggtitle(paste("Impact du ",var_str," sur le nb_especes")))
+
+# order_indices <- order(df$dayMinutes)
+# # Imprimer la colonne ordonnée
+# print(df$dayMinutes[order_indices])
+
+```
+
+```{r}
+print(ggplot(df,aes(x=habitat,y=nb_captures,fill=Gear))+geom_boxplot())
+print(ggplot(df,aes(x=habitat,y=nb_especes,fill=Gear))+geom_boxplot())
+
+```
+
+```{r}
+var1 = df$habitat
+var2 = df$Gear
+
+print(ggplot(df,aes(x=nb_captures,y=nb_especes,color=Gear,shape=Gear))+geom_point())
+# print(ggplot(df,aes(x=var1,y=nb_especes,fill=var2))+geom_boxplot())
+
+```
+
