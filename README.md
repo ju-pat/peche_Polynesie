@@ -3,7 +3,7 @@ Le code de notre projet de M2-MSV concernant des données de captures de pêche 
 
 Ces codes utilisent des bases de données transformées : Data_R_total.csv
 
-### Pour les modèles GLM : fichier *GLM.Rdm*
+### Pour les modèles GLM : fichier *GLM.Rmd*
 Il contient :
 - différents GLM entraînés, leurs performances, avec la possibilité de choisir la variable réponse et des changer les variables explicatives
 - des visualisations descriptives du jeu de données
