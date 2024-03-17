@@ -15,3 +15,10 @@ Il contient :
 - des visualisations des variables importantes et d'arbres simples de décision
 - une méthode de fine-tuning avec optuna et de cross-validation
 
+### Pour la création d'une base de données compacte et les visualisations en clustermap : fichier *Etude_des_compositions.ipynb*
+Il contient :
+- une phase de nettoyage des données et de reliage des bases de données sur les sorties et sur les captures
+- création de la base de données compacte, avec notamment sélection d'une zone géographique par sortie pour chaque type de découpage géographique
+Les autres parties contiennent certains résultats non concluants, mais les méthodes et outils restent intéressants et ont constitués une importante partie d'exploration des données
+- différentes clustermap (plus ou moins concluantes, cf rapport)
+- une étude descriptive plus spécifique aux nombres d'espèces pêchées par sortie en fonction de la technique et de l'habitat
