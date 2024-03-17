@@ -1,14 +1,16 @@
 # peche_Polynesie
 Le code de notre projet de M2-MSV concernant des données de captures de pêche en Polynésie française.
 
-Ces codes utilisent des bases de données transformées : Data_R_total.csv
+Ces codes utilisent des fichiers et bases de données transformées.
 
 ### Pour les modèles GLM : fichier *GLM.Rmd*
+Utilise : Data_R_total.csv
 Il contient :
 - différents GLM entraînés, leurs performances, avec la possibilité de choisir la variable réponse et des changer les variables explicatives
 - des visualisations descriptives du jeu de données
 
 ### Pour les RF : fichier *RandomForest.ipynb*
+Utilise : Data_R_total.csv
 Il contient :
 - une phase de preprocessing avec la possibilité de choisir la variable réponse et des changer les variables explicatives (cf rapport, possible de modéliser une espèce par les autres)
 - une pipeline complète d'entraînement de 3 RF différents
@@ -16,6 +18,7 @@ Il contient :
 - une méthode de fine-tuning avec optuna et de cross-validation
 
 ### Pour la création d'une base de données compacte et les visualisations en clustermap : fichier *Etude_des_compositions.ipynb*
+Utilise : Lev2-SortiesPeches, Lev3_CompoPrises, trackClassification_by_Coast.csv, trackClassification_by_habitat.csv, trackClassification_by_passToPass.csv, trackClassification_by_village.csv
 Il contient :
 - une phase de nettoyage des données et de reliage des bases de données sur les sorties et sur les captures
 - création de la base de données compacte, avec notamment sélection d'une zone géographique par sortie pour chaque type de découpage géographique
