@@ -5,6 +5,7 @@ Ces codes utilisent des fichiers et bases de données transformées.
 
 ### Pour les modèles GLM : fichier *GLM.Rmd*
 Utilise : Data_R_total.csv
+
 Il contient :
 - différents GLM entraînés, leurs performances, avec la possibilité de choisir la variable réponse et des changer les variables explicatives
 - des visualisations descriptives du jeu de données
