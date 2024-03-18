@@ -12,6 +12,7 @@ Il contient :
 
 ### Pour les RF : fichier *RandomForest.ipynb*
 Utilise : Data_R_total.csv
+
 Il contient :
 - une phase de preprocessing avec la possibilité de choisir la variable réponse et des changer les variables explicatives (cf rapport, possible de modéliser une espèce par les autres)
 - une pipeline complète d'entraînement de 3 RF différents
@@ -20,6 +21,7 @@ Il contient :
 
 ### Pour la création d'une base de données compacte et les visualisations en clustermap : fichier *Etude_des_compositions.ipynb*
 Utilise : Lev2-SortiesPeches, Lev3_CompoPrises, trackClassification_by_Coast.csv, trackClassification_by_habitat.csv, trackClassification_by_passToPass.csv, trackClassification_by_village.csv
+
 Il contient :
 - une phase de nettoyage des données et de reliage des bases de données sur les sorties et sur les captures
 - création de la base de données compacte, avec notamment sélection d'une zone géographique par sortie pour chaque type de découpage géographique
