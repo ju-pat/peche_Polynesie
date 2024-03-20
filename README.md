@@ -2,7 +2,7 @@
 Le code de notre projet de M2-MSV concernant des données de captures de pêche en Polynésie française.
 
 Ces codes utilisent des fichiers et bases de données transformées.
-### Pour les modèles GLM : fichier *GLM.Rmd*
+### Pour les ACP : fichier *ACP.Rmd*
 Utilise : Data_R.csv
 Il contient : 
 - Une phase d'étude des corrélation
