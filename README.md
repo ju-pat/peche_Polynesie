@@ -31,6 +31,6 @@ Les autres parties contiennent certains résultats non concluants, mais les mét
 
 ### Pour les PLN : fichier *PLN github.Rmb*
 Il contient :
--une Phase de preprocessing des données 
--une Phase de création de fonctions utiles au plot des données
--les codes menant au plot du rapport 
+- une Phase de preprocessing des données 
+- une Phase de création de fonctions utiles au plot des données
+- les codes menant au plot du rapport 
