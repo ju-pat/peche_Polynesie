@@ -30,7 +30,7 @@ Les autres parties contiennent certains résultats non concluants, mais les mét
 - une étude descriptive plus spécifique aux nombres d'espèces pêchées par sortie en fonction de la technique et de l'habitat
 
 ### Pour les PLN : fichier *PLN github.Rmb*
-Contient :
+Il contient :
 -une Phase de preprocessing des données 
 -une Phase de création de fonctions utiles au plot des données
 -les codes menant au plot du rapport 
