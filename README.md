@@ -28,3 +28,9 @@ Il contient :
 Les autres parties contiennent certains résultats non concluants, mais les méthodes et outils restent intéressants et ont constitués une importante partie d'exploration des données
 - différentes clustermap (plus ou moins concluantes, cf rapport)
 - une étude descriptive plus spécifique aux nombres d'espèces pêchées par sortie en fonction de la technique et de l'habitat
+
+### Pour les PLN : fichier *PLN github.Rmb*
+Contient :
+-une Phase de preprocessing des données 
+-une Phase de création de fonctions utiles au plot des données
+-les codes menant au plot du rapport 
