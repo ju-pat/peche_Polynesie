@@ -1,0 +1,227 @@
+---
+title: "ACP github Notebook"
+output: html_notebook
+---
+
+Importation des librairies : 
+```{r}
+library(knitr) # pour avoir un format table dans les sorties
+library(ggplot2) # pour avoir de 'beaux' graphiques
+library(plyr) # pour produire des résumés
+library(cowplot)
+library(gridExtra)
+library(corrplot) # representation graph des correlations
+library(FactoMineR) # pour realiser l'acp
+library(factoextra) # graphique ggplot pour acp
+library(viridis)
+
+```
+
+```{r}
+data <- read.csv("Data_R.csv")
+scaled_data <- scale(data)
+```
+
+Analyse de corrélations : 
+
+```{r}
+BackReef <- c('Parrotfish', 'Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Myripristinae', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae')
+
+data_BR <- data[, BackReef]
+
+
+corr_scaled_BR <- cor(scale(data_BR))
+
+kable(round(corr_scaled_BR,2))
+
+corrplot(corr_scaled_BR)
+
+```
+
+
+Maintenant faisont une clusterisation sur l'ACP de ces données.
+
+```{r}
+
+####### ANALYSE EN COMPOSANTE PRINCIPALE
+
+acp = PCA(scaled_data_BR,scale.unit = TRUE, graph=F, ncp = dim(data_BR)[2])
+get_eig(acp)
+fviz_eig(acp)
+
+n1=fviz_pca_ind(acp,axes=c(1,2),col.ind = "cos2")
+n2=fviz_pca_ind(acp,axes=c(3,4),col.ind = "cos2")
+plot_grid(n1,n2,nrow=2)
+
+cc1=fviz_pca_var(acp,axes=c(1,2), repel = TRUE, labelsize = 2)
+cc2=fviz_pca_var(acp,axes=c(3,4),labelsize = 2)
+plot_grid(cc1,cc2,nrow=1)
+
+pca_vars <- get_pca_var(acp)
+
+# Obtenir les coordonnées des variables sur l'axe 1
+print(pca_vars$coord)
+
+
+### METHODE DES K-MEANS
+
+Kmax = 20
+IW=numeric(Kmax)
+for (k in 1:(Kmax))
+{
+  km = kmeans(scaled_data_BR,centers=k,nstart = 100)
+  IW[k] = km$tot.withinss
+}
+ggplot(data.frame(k = 1:(Kmax), # On créée un tableau avec nos deux colonnes
+                  Iw = IW)) +
+  aes(x = k, y = Iw) + # On spécifie les axes de représentation
+  geom_point() + # On trace les points
+  geom_line() + # On les relie par une ligne
+  labs(x = "K", # On nomme les axes
+       y = expression(I[W](K)))
+
+
+K = 5
+kmdata = kmeans(scaled_data_BR,centers=K,nstart = 200)
+kmdata$totss
+kmdata$betweenss
+kmdata$tot.withinss
+kmCluster = kmdata$cluster
+
+
+data_Dist = dist(scaled_data_BR)
+CAHdata = hclust(data_Dist,method="ward.D2")
+plot(CAHdata,hang=-1)
+rect.hclust(CAHdata,k=K)
+
+
+CAHCluster = cutree(CAHdata,k=5)
+kable(table(CAHCluster,kmCluster))
+
+
+res.pca <- PCA(scaled_data_BR, scale.unit = TRUE, graph = FALSE, ncp = 12)
+fviz_pca_ind(res.pca, axes = 1:2,geom.ind = "point", col.ind=factor(kmCluster))
+
+```
+
+
+Maintenant, nous faisons des coloration de cette ACP en fonction d'autres grandeurs pour voir s'il y a corrélation entre la clusterisation des K-means et/ou une structure particulière se dégageant. 
+
+
+
+############################################################################
+############################################################################
+
+Coloration par Parrotfishs
+```{r}
+
+BackReef <- c('Parrotfish','Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Myripristinae', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae')
+BackReef_2 <- c('Myripristinae','Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae')
+data_BR<-data[,BackReef]
+data_BR_2 <-data[,BackReef_2]
+data_BR_2<-scale(data_BR_2)
+
+# Création d'un data frame avec les résultats de l'ACP et la colonne dayNightRatio
+
+res.pca <- PCA(data_BR_2, scale.unit = TRUE, graph = FALSE, ncp = 12)
+
+pca_data <- as.data.frame(res.pca$ind$coord)
+pca_data$dayNightRatio <- data_BR$Parrotfish
+
+# Création du graphique avec ggplot2
+ggplot(pca_data, aes(x = Dim.1, y = Dim.2, color = dayNightRatio)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Dimension 1", y = "Dimension 2", color = "Parrotfish")
+
+```
+
+############################################################################
+############################################################################
+
+Coloration par DayNightRatio
+
+```{r}
+time <- c("dayNightRatio", "moonDay", "moonDur")
+data_time <- data[, time]
+
+pca_data <- as.data.frame(res.pca$ind$coord)
+pca_data$dayNightRatio <- data_time$dayNightRatio
+
+# Création du graphique avec ggplot2
+ggplot(pca_data, aes(x = Dim.1, y = Dim.2, color = dayNightRatio)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Dimension 1", y = "Dimension 2", color = "dayNightRatio")
+```
+############################################################################
+############################################################################
+
+Coloration par nombre de capture par sortie
+```{r}
+BackReef <- c('Parrotfish','Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Myripristinae', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae')
+
+df_study <- df_raw[df_raw$habitat == "BackReef", c(BackReef, "nb_captures")]
+df_poissons <- df_study[,BackReef]
+
+
+res.pca <- PCA(scale(df_poissons), scale.unit = TRUE, graph = FALSE, ncp = 12)
+
+pca_data <- as.data.frame(res.pca$ind$coord)
+pca_data$dayNightRatio <- df_study$nb_captures
+
+# Création du graphique avec ggplot2
+ggplot(pca_data, aes(x = Dim.1, y = Dim.2, color = dayNightRatio)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Dimension 1", y = "Dimension 2", color = "nb_captures")
+
+```
+############################################################################
+############################################################################
+
+Coloration par phase lunaire lors de la sortie
+```{r}
+# Création d'un data frame avec les résultats de l'ACP et la colonne dayNightRatio
+pca_data <- as.data.frame(res.pca$ind$coord)
+pca_data$dayNightRatio <- data_time$moonDay
+
+# Création du graphique avec ggplot2
+ggplot(pca_data, aes(x = Dim.1, y = Dim.2, color = dayNightRatio)) +
+  geom_point() +
+  scale_color_viridis_c() +
+  labs(x = "Dimension 1", y = "Dimension 2", color = "moonDay")
+
+# Supposons que vous avez déjà calculé les composantes principales et que vous avez les résultats dans res.pca
+
+# Création d'un data frame avec les résultats de l'ACP et la colonne dayNightRatio
+pca_data <- as.data.frame(res.pca$ind$coord)
+pca_data$dayNightRatio <- data_time$moonDay
+
+# Définir les seuils pour la coloration
+seuils <- c(0, 3.5, 9.5, 16.5, 24.5, 29)
+
+# Définir les couleurs correspondantes
+couleurs <- c("red", "purple", "blue", "green")
+
+# Fonction pour attribuer une couleur en fonction de la valeur de moonDay
+assigner_couleur <- function(x) {
+  for (i in 1:(length(seuils)-1)) {
+    if (x >= seuils[i] && x < seuils[i+1]) {
+      return(couleurs[i])
+    }
+  }
+}
+
+# Appliquer la fonction pour obtenir les couleurs
+pca_data$couleur <- sapply(pca_data$dayNightRatio, assigner_couleur)
+
+# Création du graphique avec ggplot2
+ggplot(pca_data, aes(x = Dim.1, y = Dim.2, color = couleur)) +
+  geom_point() +
+  scale_color_identity() +
+  labs(x = "Dimension 1", y = "Dimension 2", color = "moonDay")
+
+
+```
+
