@@ -2,7 +2,12 @@
 Le code de notre projet de M2-MSV concernant des données de captures de pêche en Polynésie française.
 
 Ces codes utilisent des fichiers et bases de données transformées.
-
+### Pour les modèles GLM : fichier *GLM.Rmd*
+Utilise : Data_R.csv
+Il contient : 
+- Une phase d'étude des corrélation
+- Une phase d'étude de l'ACP
+- Une phase de tentative de coloration de l'ACP par différentes grandeurs (présentées dans le rapport)
 ### Pour les modèles GLM : fichier *GLM.Rmd*
 Utilise : Data_R_total.csv
 
@@ -30,6 +35,7 @@ Les autres parties contiennent certains résultats non concluants, mais les mét
 - une étude descriptive plus spécifique aux nombres d'espèces pêchées par sortie en fonction de la technique et de l'habitat
 
 ### Pour les PLN : fichier *PLN github.Rmb*
+Utilise : Data_R_total.csv
 Il contient :
 - une Phase de preprocessing des données 
 - une Phase de création de fonctions utiles au plot des données
