@@ -1,0 +1,173 @@
+---
+title: "Code PLN R Notebook"
+output: html_notebook
+---
+
+Tout d'abord on importe les données et importation du package: 
+Selon l'enregistrement des données quelques changements de directory seront nécessaires:
+```{r}
+install.packages("PLNmodels")
+library(PLNmodels)
+
+df_raw <- read.csv("Data_R_total.csv")
+```
+Puis on construit les jeux de données intéressants :
+```{r}
+BackReef <- c('Parrotfish', 'Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Myripristinae', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae')
+
+df_poissons_BR<- df_raw[df_raw$habitat == "BackReef", BackReef]
+```
+
+Quelques fonctions utiles : 
+```{r}
+########################################################################
+###################### fonctions utiles ################################
+########################################################################
+
+box_plot4 <- function(Abundance, Covariate, Best_model, nom_graph){
+  # Vecteur initial
+  vecteur_initial <- Best_model$memberships
+  
+  # Trouver les chiffres uniques dans le vecteur initial
+  chiffres_uniques <- sort(unique(vecteur_initial))
+  
+  # Créer une liste pour stocker les vecteurs de positions
+  positions_liste <- list()
+  
+  # Boucle à travers chaque chiffre unique
+  for (chiffre in chiffres_uniques) {
+    positions_liste[[as.character(chiffre)]] <- c()
+  }
+  
+  for (chiffre in chiffres_uniques) {
+    # Trouver les positions du chiffre dans le vecteur initial
+    positions <- which(vecteur_initial == chiffre)
+    # Ajouter les positions à la liste
+    positions_liste[[as.character(chiffre)]] <- c(positions_liste[[as.character(chiffre)]],positions)
+  }
+  # Afficher les vecteurs de positions
+  positions_liste
+  Abundance_try <- Abundance
+  
+  Abundance_try$Clusters<-as.list(Best_model$memberships)
+  Liste <- Best_model$memberships
+  Abundance_try <- cbind(data.frame(Cluster = Liste),Abundance)
+  
+  Abundance_clust_test<-Abundance_try
+  # Calculer les moyennes pour chaque cluster pour chaque colonne
+  means_by_cluster <- aggregate(Abundance_clust_test[, -1], by = list(Abundance_clust_test$Cluster), mean)
+  
+  # Tracer les boxplots pour chaque colonne
+  nom <- paste0(nom_graph, ".pdf")
+  pdf(nom, width = 10, height = 6) 
+  par(mfrow=c(2, ceiling(ncol(means_by_cluster[, -1])/2)))  # Créer une grille de graphiques
+  
+  for (i in 2:ncol(means_by_cluster)) {
+    boxplot(split(Abundance_clust_test[, i], Abundance_clust_test$Cluster), main = colnames(means_by_cluster)[i], xlab = "Cluster", ylab = "Moyenne")
+  }
+  
+  dev.off()
+}
+
+OHEncoding <- function(col_name, data){
+  # Appliquer le one-hot encoding à la colonne 'Gear'
+  one_hot_encoded <- model.matrix(~ get(col_name) - 1, data = data)
+  # Renommer les colonnes pour les rendre plus explicites
+  colnames(one_hot_encoded) <- gsub(col_name, "", colnames(one_hot_encoded))
+  # Combinez les matrices one-hot encoded avec l'ensemble de données d'origine
+  data <- one_hot_encoded
+  # Supprimer la colonne d'origine 'Genre'
+  data1 <- data[, !grepl(col_name, colnames(data))]
+  data1 <- data1[,-1]
+  return(data)
+}
+
+```
+
+################################################################################################################################################################################__ETUDE_PAR_MIXTURE_MODEL_##################################################################################################################################################################################
+
+Mixture modele sans covariable - On ne considère que les effets principaux
+```{r}
+Abundance <- as.matrix(df_poissons_BR)
+Abundance_data <- df_poissons_BR
+
+
+myPLNmixtureMAIN <- PLNmixture(Abundance ~ 1, clusters = 1:8, data = Abundance_data)
+```
+
+Résultats : 
+Certains résultats seront enregistrés automatiquement en pdf dans votre main directory.
+```{r}
+plot(myPLNmixtureMAIN)
+Best_modelMAIN <- getBestModel(myPLNmixtureMAIN)
+plot(Best_modelMAIN)
+
+box_plot4(Abundance_data, c(), Best_modelMAIN, "Main")
+
+box_plot4(df_raw[df_raw$habitat == "BackReef",c("nb_captures", "nb_especes", "dayNightRatio", "Parrotfish")], Covariate_data, Best_modelMAIN, "Main_explication")
+
+```
+
+########################################################################################################################################################
+Mixture modele - On ne considère pas les effets issus de ce vecteur de variables : c("nb_captures", "nb_especes", "dayNightRatio", "Parrotfish")
+```{r}
+cov <- c("nb_captures", "nb_especes", "dayNightRatio", "Parrotfish")
+BackReef_p <- c('Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Myripristinae', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae') # On a enlevé le Parrotfish puisqu'il est considéré dans les covariables
+data <- df_raw[df_raw$habitat == "BackReef",]
+
+Covariate <- as.matrix(data[, cov])
+Covariate_data <- data[, cov]
+data_BR_p <- data[, BackReef_p]
+Abundance_p <- as.matrix(data[, BackReef_p])
+Abundance_p_data <- data[, BackReef_p]
+
+df_study <- cbind(Abundance_p_data,Covariate_data)
+```
+Résultats :
+
+```{r}
+myPLNmixtureetape2 <- PLNmixture(Abundance_p ~ Covariate, clusters = 1:8, data = df_study)
+plot(myPLNmixtureetape2)
+Best_modeletape2 <- getBestModel(myPLNmixtureetape2)
+plot(Best_modeletape2)
+
+box_plot4(Abundance_p_data, Covariate_p_data, Best_modeletape2, "PLN ETAPE 2")
+
+box_plot4(data.frame(OHEncoding("moonPhase", data)), Covariate_data, Best_modeletape2, "PLN_etape_2_explication")
+
+```
+
+########################################################################################################################################################
+Mixture modele - On ne considère pas les effets issus de ce vecteur de variables : c("nb_captures", "nb_especes", "dayNightRatio", "Parrotfish", "moonDay", "moonDur", names(data.frame(OHEncoding("moonPhase", df_raw[df_raw$habitat == "BackReef",]))))
+```{r}
+cov <- c("nb_captures", "nb_especes", "dayNightRatio", "Parrotfish", "moonDay", "moonDur", names(data.frame(OHEncoding("moonPhase", df_raw[df_raw$habitat == "BackReef",]))))
+
+BackReef_p <- c('Parupeneus.sp.',  'Holocentrinae', 'Mulloidichtys.sp.', 'Myripristinae', 'Epinephelus.sp.', 'Cephalopholis.argus', 'Siganidae', 'Holocentridae')
+
+data <- cbind(df_raw, data.frame(OHEncoding("moonPhase", df_raw)))
+data <- data[data$habitat == "BackReef",]
+Covariate <- as.matrix(data[, cov])
+Covariate_data <- data[, cov]
+
+data_BR_p <- data[, BackReef_p]
+Abundance_p <- as.matrix(data[, BackReef_p])
+Abundance_p_data <- data[, BackReef_p]
+
+df_study <- cbind(Abundance_p_data,Covariate_data)
+```
+Résultats :
+
+```{r}
+myPLNmixtureetape3 <- PLNmixture(Abundance_p ~ Covariate, clusters = 1:8, data = df_study)
+plot(myPLNmixtureetape3)
+Best_modeletape3 <- getBestModel(myPLNmixtureetape3)
+plot(Best_modeletape3)
+
+
+box_plot4(Abundance_p_data, Covariate_p_data, Best_modeletape3, "PLN ETAPE 3")
+
+```
+
+
+
+
